@@ -1,4 +1,4 @@
-<!doctype html>
+ <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -16,14 +16,14 @@
     .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}.stat{background:#152235;border:1px solid #304158;padding:15px;border-radius:12px}.stat strong{font-size:25px;display:block}.stat small{display:block}
     .scroll{overflow:auto}table{width:100%;border-collapse:collapse;min-width:1030px}th,td{border-bottom:1px solid #304158;padding:11px 9px;text-align:left;vertical-align:top}th{font-size:12px;color:#b4c3d4;white-space:nowrap}td{font-variant-numeric:tabular-nums}
     .status{display:inline-block;padding:4px 8px;border-radius:16px;font-size:11px;font-weight:800;background:#29405c;color:#d9eaff;white-space:nowrap}
-    .status.paid{color:#b4ffce;background:#174332}.status.partial{color:#ffe4a5;background:#524020}.status.over{color:#ffc8c8;background:#522c34}
+    .status.paid{color:#b4ffce;background:#174332}.status.waived{color:#ffe4a5;background:#524020}.status.over{color:#ffc8c8;background:#522c34}
     .notice{border-left:3px solid #f2d084;padding:10px 14px;background:#2b3040;border-radius:5px}.error{color:#ffb4b4}.good{color:#78e8ad}
     a{color:#b6e4ff}a:hover{text-decoration:none}[hidden]{display:none!important}
     @media(max-width:760px){main{padding:10px}header{padding:18px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:23px}}
   </style>
 </head>
 <body>
-<header><div><small>BBC MINI FUN GAME · OWNER-ONLY FINANCIAL CONTROL</small><h1>Individual Player Payment Management</h1><p class="muted">Separate records per player · Draft fees protected · Read-only launch stage</p></div></header>
+<header><div><small>BBC MINI FUN GAME · OWNER-ONLY FINANCIAL CONTROL</small><h1>Individual Player Payment Management</h1><p class="muted">Separate records per player · Admin-only status and adjustments · Draft fees protected</p></div></header>
 <main>
   <section class="panel" id="loginPanel">
     <h2>BBC Tournament Owner Login</h2>
@@ -38,7 +38,7 @@
   <section id="dashboard" hidden>
     <div class="panel">
       <div class="row between"><div><h2>Owner Payment Dashboard</h2><p class="muted" id="lastRefresh">Not loaded</p></div><div class="row"><button id="refresh" class="primary" type="button">Refresh payments</button><button id="logout" type="button">Sign out</button></div></div>
-      <p class="notice"><strong>Read-only preparation mode.</strong> No payments can be entered or modified on this page yet. Fee configuration is still in draft. The old ₱300 legacy fee is shown only for reference, not as an official amount due.</p>
+      <p class="notice"><strong>Read-only preparation mode.</strong> PAID / UNPAID / WAIVED tagging and adjustment controls are visible but cannot save until the audited admin-only backend is installed. No payments can be entered or modified on this page yet. Fee configuration is still in draft. The old ₱300 legacy fee is shown only for reference, not as an official amount due.</p>
       <p id="status" role="status" aria-live="polite"></p>
     </div>
     <section class="stats" aria-label="Payment summary">
@@ -48,9 +48,20 @@
       <div class="stat"><small>Confirmed unpaid balance (₱)</small><strong id="balanceSum">—</strong><small id="balanceNote">Unavailable until fees are finalized</small></div>
     </section>
     <section class="panel">
-      <div class="row controls"><input id="search" type="search" placeholder="Search player or category" aria-label="Search players"><select id="category" aria-label="Filter category"><option value="">All categories</option></select><select id="paymentStatus" aria-label="Filter payment status"><option value="">All statuses</option><option value="AWAITING FINAL FEE">Awaiting final fee</option><option value="UNPAID">Unpaid</option><option value="PARTIAL">Partial</option><option value="PAID">Paid</option><option value="OVERPAYMENT REVIEW">Overpayment review</option></select></div>
-      <div class="scroll"><table><thead><tr><th>Player</th><th>Category</th><th>Reg. status</th><th>Draft fee</th><th>Completed matches billed</th><th>Legacy fee</th><th>Official total</th><th>Amount paid</th><th>Balance</th><th>Payment status</th></tr></thead><tbody id="paymentRows"><tr><td colspan="10">Sign in to view payments.</td></tr></tbody></table></div>
+      <div class="row controls"><input id="search" type="search" placeholder="Search player or category" aria-label="Search players"><select id="category" aria-label="Filter category"><option value="">All categories</option></select><select id="paymentStatus" aria-label="Filter payment status"><option value="">All statuses</option><option value="AWAITING FINAL FEE">Awaiting final fee</option><option value="UNPAID">Unpaid</option><option value="WAIVED">Waived</option><option value="PAID">Paid</option><option value="OVERPAYMENT REVIEW">Overpayment review</option></select></div>
+      <div class="scroll"><table><thead><tr><th>Player</th><th>Category</th><th>Reg. status</th><th>Draft fee</th><th>Completed matches billed</th><th>Legacy fee</th><th>Official total</th><th>Amount paid</th><th>Balance</th><th>Payment status</th><th>Admin action</th></tr></thead><tbody id="paymentRows"><tr><td colspan="11">Sign in to view payments.</td></tr></tbody></table></div>
       <p class="muted" id="resultsCount"></p>
+    </section>
+    <section class="panel" id="adminActions" hidden>
+      <h2>Admin Payment Status &amp; Adjustments</h2>
+      <p class="muted" id="selectedPlayer">Choose a player using Manage in the table.</p>
+      <div class="row controls">
+        <div><label for="adminTag">Payment tag</label><select id="adminTag"><option value="UNPAID">UNPAID</option><option value="PAID">PAID</option><option value="WAIVED">WAIVED</option></select></div>
+        <div><label for="adjustmentAmount">Adjustment amount (₱)</label><input id="adjustmentAmount" type="number" step="0.01" placeholder="0.00" min="-1000000" max="1000000"></div>
+        <div><label for="adjustmentReason">Reason (required)</label><input id="adjustmentReason" type="text" maxlength="300" placeholder="e.g. waiver approved by organizer"></div>
+      </div>
+      <p class="notice"><strong>Not yet enabled:</strong> The current Supabase payment function only records actual positive payments and fees are still in draft. Tagging PAID, UNPAID, or WAIVED and making adjustments will require an owner-only, audited database operation. These controls currently prepare your selection but cannot save changes.</p>
+      <button class="primary" id="saveAdminAction" disabled title="Requires secure owner-only status/adjustment backend">Save status / adjustment (not enabled)</button>
     </section>
     <p class="muted">Only an active account with role <code>owner</code> in <code>tournament_admins</code> can load financial records. No tournament scores or registration data are changed by this page.</p>
   </section>
@@ -70,7 +81,7 @@ let authorized=false, allPayments=[];
 const money = v => v == null ? '—' : '₱'+Number(v).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
 function setStatus(message, isError=false){$('status').textContent=message;$('status').className=isError?'error':'muted';}
 function showError(message){$('loginStatus').textContent=message;$('loginStatus').className='error';}
-function badgeClass(value){if(value==='PAID')return 'paid';if(value==='PARTIAL')return 'partial';if(value==='OVERPAYMENT REVIEW')return 'over';return '';}
+function badgeClass(value){if(value==='PAID')return 'paid';if(value==='WAIVED')return 'waived';if(value==='OVERPAYMENT REVIEW')return 'over';return '';}
 function td(tr,value){let cell=document.createElement('td');cell.textContent=value??'—';tr.appendChild(cell);return cell;}
 async function verifyOwner(){
   if(!db)throw new Error('Supabase library did not load.');
@@ -121,20 +132,28 @@ function renderRows(){
   const term=$('search').value.trim().toLowerCase(),cat=$('category').value,status=$('paymentStatus').value;
   const list=allPayments.filter(r=>(!term||[r.player_name,r.category,r.registration_status].some(x=>String(x||'').toLowerCase().includes(term)))&&(!cat||r.category===cat)&&(!status||r.payment_status===status));
   const body=$('paymentRows');body.replaceChildren();
-  if(!list.length){const tr=document.createElement('tr');td(tr,allPayments.length?'No matching players.':'No payment records available.').colSpan=10;body.appendChild(tr);}
+  if(!list.length){const tr=document.createElement('tr');td(tr,allPayments.length?'No matching players.':'No payment records available.').colSpan=11;body.appendChild(tr);}
   for(const r of list){
     const tr=document.createElement('tr');
     td(tr,r.player_name);td(tr,r.category);td(tr,r.registration_status);
     td(tr,r.fee_status||'draft');td(tr,r.allocated_matches==null?'Not assigned':String(r.allocated_matches));
     td(tr,money(r.legacy_fee));td(tr,money(r.official_total));td(tr,money(r.amount_paid));td(tr,money(r.remaining_balance));
     const cell=td(tr,'');const badge=document.createElement('span');badge.className='status '+badgeClass(r.payment_status);badge.textContent=r.payment_status||'UNKNOWN';cell.appendChild(badge);
+    const manage=td(tr,'');const btn=document.createElement('button');btn.type='button';btn.textContent='Manage';btn.addEventListener('click',()=>selectPlayer(r));manage.appendChild(btn);
     body.appendChild(tr);
   }
   $('resultsCount').textContent=`Showing ${list.length} of ${allPayments.length} individual player payment record(s).`;
 }
+function selectPlayer(r){
+  $('adminActions').hidden=false;
+  $('selectedPlayer').textContent=`Selected player: ${r.player_name || 'Unknown'} · ${r.category || ''} · Current calculated status: ${r.payment_status || 'Unknown'}`;
+  $('adminTag').value=['PAID','UNPAID','WAIVED'].includes(r.payment_status)?r.payment_status:'UNPAID';
+  $('adjustmentAmount').value=''; $('adjustmentReason').value='';
+  $('adminActions').scrollIntoView({behavior:'smooth',block:'start'});
+}
 async function signOut(message='Signed out.'){
   authorized=false;allPayments=[];
-  $('dashboard').hidden=true;$('loginPanel').hidden=false;
+  $('dashboard').hidden=true;$('loginPanel').hidden=false;$('adminActions').hidden=true;
   $('password').value='';$('paymentRows').replaceChildren();
   if(db)await db.auth.signOut();
   $('loginStatus').textContent=message;$('loginStatus').className='muted';
