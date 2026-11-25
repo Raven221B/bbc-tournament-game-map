@@ -1,4 +1,4 @@
- <!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -20,10 +20,11 @@
     .notice{border-left:3px solid #f2d084;padding:10px 14px;background:#2b3040;border-radius:5px}.error{color:#ffb4b4}.good{color:#78e8ad}
     a{color:#b6e4ff}a:hover{text-decoration:none}[hidden]{display:none!important}
     @media(max-width:760px){main{padding:10px}header{padding:18px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:23px}}
+  label{display:block;font-weight:650;margin-bottom:5px}.feegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0}.feegrid input,.feegrid select{width:100%}#feeBadge{vertical-align:middle}#showWithdrawn{accent-color:#78e8ad}@media(max-width:760px){.feegrid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-<header><div><small>BBC MINI FUN GAME · OWNER-ONLY FINANCIAL CONTROL</small><h1>Individual Player Payment Management</h1><p class="muted">Separate records per player · Admin-only status and adjustments · Draft fees protected</p></div></header>
+<header><div><small>BBC MINI FUN GAME · OWNER-ONLY FINANCIAL CONTROL</small><h1>Individual Player Payment Management</h1><p class="muted">Separate records per player · Admin-only status and adjustments · Editable owner-only fees &amp; player payment status</p></div></header>
 <main>
   <section class="panel" id="loginPanel">
     <h2>BBC Tournament Owner Login</h2>
@@ -36,142 +37,168 @@
     <p id="loginStatus" role="status" aria-live="polite"></p>
   </section>
   <section id="dashboard" hidden>
-    <div class="panel">
-      <div class="row between"><div><h2>Owner Payment Dashboard</h2><p class="muted" id="lastRefresh">Not loaded</p></div><div class="row"><button id="refresh" class="primary" type="button">Refresh payments</button><button id="logout" type="button">Sign out</button></div></div>
-      <p class="notice"><strong>Read-only preparation mode.</strong> PAID / UNPAID / WAIVED tagging and adjustment controls are visible but cannot save until the audited admin-only backend is installed. No payments can be entered or modified on this page yet. Fee configuration is still in draft. The old ₱300 legacy fee is shown only for reference, not as an official amount due.</p>
+    <section class="panel">
+      <div class="row between"><div><h2>Owner Payment Dashboard</h2><p class="muted" id="lastRefresh">Not loaded</p></div><div class="row"><button id="refresh" class="primary" type="button">Refresh</button><button id="sync" type="button">Sync Approved Players</button><button id="logout" type="button">Sign out</button></div></div>
+      <p class="notice">Owner-only controls. PAID records actual money received; WAIVED needs a reason and creates no payment transaction. Withdrawn registrations remain in history. Match-based shuttlecock charges remain unavailable until valid completed matches are allocated per player.</p>
       <p id="status" role="status" aria-live="polite"></p>
-    </div>
-    <section class="stats" aria-label="Payment summary">
-      <div class="stat"><small>Individual player records</small><strong id="recordCount">—</strong></div>
-      <div class="stat"><small>Awaiting final fee</small><strong id="awaitingCount">—</strong></div>
-      <div class="stat"><small>Recorded payments (₱)</small><strong id="paidSum">—</strong></div>
-      <div class="stat"><small>Confirmed unpaid balance (₱)</small><strong id="balanceSum">—</strong><small id="balanceNote">Unavailable until fees are finalized</small></div>
     </section>
     <section class="panel">
-      <div class="row controls"><input id="search" type="search" placeholder="Search player or category" aria-label="Search players"><select id="category" aria-label="Filter category"><option value="">All categories</option></select><select id="paymentStatus" aria-label="Filter payment status"><option value="">All statuses</option><option value="AWAITING FINAL FEE">Awaiting final fee</option><option value="UNPAID">Unpaid</option><option value="WAIVED">Waived</option><option value="PAID">Paid</option><option value="OVERPAYMENT REVIEW">Overpayment review</option></select></div>
-      <div class="scroll"><table><thead><tr><th>Player</th><th>Category</th><th>Reg. status</th><th>Draft fee</th><th>Completed matches billed</th><th>Legacy fee</th><th>Official total</th><th>Amount paid</th><th>Balance</th><th>Payment status</th><th>Admin action</th></tr></thead><tbody id="paymentRows"><tr><td colspan="11">Sign in to view payments.</td></tr></tbody></table></div>
+      <h2>Fee Configuration <span id="feeBadge" class="status">Loading</span></h2>
+      <p class="muted">Edit the three per-player charges. Draft fees can be changed without charging players. Finalize only when the amounts are confirmed.</p>
+      <div class="feegrid">
+        <div><label for="tournamentFee">Tournament / Fun Game Fee (₱)</label><input id="tournamentFee" type="number" min="0" max="100000" step="0.01" placeholder="Not set"></div>
+        <div><label for="queueFee">Queuing Fee (₱)</label><input id="queueFee" type="number" min="0" max="100000" step="0.01" placeholder="150.00"></div>
+        <div><label for="shuttleFee">Shuttlecock Cost Per Completed Match (₱)</label><input id="shuttleFee" type="number" min="0" max="100000" step="0.01" placeholder="50.00"></div>
+      </div>
+      <p class="muted">Per player = Tournament fee + Queuing fee + (Shuttlecock cost × completed allocated matches). No T-shirt charges.</p>
+      <label for="feeReason">Reason for change</label><input id="feeReason" maxlength="300" placeholder="e.g. BBC committee confirmed fees" style="width:100%;margin-bottom:10px">
+      <div class="row"><button id="saveDraft" class="primary" type="button">Save Fee Draft</button><button id="finalize" type="button">Finalize Fees (confirm)</button></div>
+      <p class="muted" id="feeMessage" role="status"></p>
+    </section>
+    <section class="stats" aria-label="Payment summary">
+      <div class="stat"><small>Active player records</small><strong id="recordCount">—</strong></div>
+      <div class="stat"><small>Awaiting fee / match allocation</small><strong id="awaitingCount">—</strong></div>
+      <div class="stat"><small>Recorded money received (₱)</small><strong id="paidSum">—</strong></div>
+      <div class="stat"><small>Known outstanding balance (₱)</small><strong id="balanceSum">—</strong><small id="balanceNote">Only fully calculated fees</small></div>
+    </section>
+    <section class="panel">
+      <div class="row controls"><input id="search" type="search" placeholder="Search player or category"><select id="category"><option value="">All categories</option></select><select id="paymentStatus"><option value="">All tags</option><option>PAID</option><option>UNPAID</option><option>WAIVED</option><option value="AWAITING FINAL FEE">Awaiting final fee</option></select><label class="row" style="margin:0"><input id="showWithdrawn" type="checkbox" style="width:auto"> Show withdrawn history</label></div>
+      <div class="scroll"><table><thead><tr><th>Player</th><th>Category</th><th>Registration</th><th>Matches billed</th><th>Official total</th><th>Received</th><th>Adjustment</th><th>Balance</th><th>Tag</th><th>Action</th></tr></thead><tbody id="paymentRows"></tbody></table></div>
       <p class="muted" id="resultsCount"></p>
     </section>
     <section class="panel" id="adminActions" hidden>
-      <h2>Admin Payment Status &amp; Adjustments</h2>
-      <p class="muted" id="selectedPlayer">Choose a player using Manage in the table.</p>
-      <div class="row controls">
-        <div><label for="adminTag">Payment tag</label><select id="adminTag"><option value="UNPAID">UNPAID</option><option value="PAID">PAID</option><option value="WAIVED">WAIVED</option></select></div>
-        <div><label for="adjustmentAmount">Adjustment amount (₱)</label><input id="adjustmentAmount" type="number" step="0.01" placeholder="0.00" min="-1000000" max="1000000"></div>
-        <div><label for="adjustmentReason">Reason (required)</label><input id="adjustmentReason" type="text" maxlength="300" placeholder="e.g. waiver approved by organizer"></div>
+      <h2>Manage Selected Player</h2><p id="selectedPlayer"></p>
+      <p class="muted" id="selectedBalance"></p>
+      <div class="feegrid">
+       <div><label for="adminTag">Admin action</label><select id="adminTag"><option value="RECORD_PAID">PAID — record actual receipt</option><option value="TAG_UNPAID">UNPAID — no money received</option><option value="WAIVE">WAIVED — excuse payment</option><option value="UNWAIVE">Remove waiver</option><option value="ADJUST">Adjust charge (+/-)</option></select></div>
+       <div><label for="paymentAmount">Amount received / adjustment (₱)</label><input id="paymentAmount" type="number" step="0.01" placeholder="0.00"></div>
+       <div><label for="paymentMethod">Method (for PAID)</label><select id="paymentMethod"><option>Cash</option><option>GCash</option><option>Bank Transfer</option><option>Other</option></select></div>
       </div>
-      <p class="notice"><strong>Not yet enabled:</strong> The current Supabase payment function only records actual positive payments and fees are still in draft. Tagging PAID, UNPAID, or WAIVED and making adjustments will require an owner-only, audited database operation. These controls currently prepare your selection but cannot save changes.</p>
-      <button class="primary" id="saveAdminAction" disabled title="Requires secure owner-only status/adjustment backend">Save status / adjustment (not enabled)</button>
+      <label for="paymentReference">Reference (optional)</label><input id="paymentReference" maxlength="250" style="width:100%;margin-bottom:10px" placeholder="GCash reference number">
+      <label for="adjustmentReason">Reason (required)</label><input id="adjustmentReason" maxlength="300" style="width:100%;margin-bottom:12px" placeholder="Explain the admin action">
+      <div class="row"><button id="saveAdminAction" class="primary" type="button">Confirm &amp; Save Admin Action</button><button id="cancelAction" type="button">Cancel</button></div>
+      <p class="muted" id="actionMessage" role="status"></p>
+      <p class="notice">Payment receipts are recorded through the existing audited transaction function. Adjustments are separate, auditable charge credits or additions. This does not edit or erase historical receipts.</p>
     </section>
-    <p class="muted">Only an active account with role <code>owner</code> in <code>tournament_admins</code> can load financial records. No tournament scores or registration data are changed by this page.</p>
+    <p class="muted">Payment actions are restricted server-side to active BBC owner accounts. Previous tournament scores, archived history, and fixtures are never modified here.</p>
   </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-// Reused unchanged from the supplied BBC H2H-R5 admin.html configuration.
-const OWNER = '3e8a0bac-9b72-4b1a-a1da-608a7b0fae1a';
-const db = window.supabase?.createClient(
-  'https://vcshzqjozgzsgaknsjzq.supabase.co',
-  'sb_publishable_PFxb5Crp0VaeStU9hosP2g_E-SIDyqs',
-  {auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}}
-);
-const $ = id => document.getElementById(id);
-let authorized=false, allPayments=[];
-const money = v => v == null ? '—' : '₱'+Number(v).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
-function setStatus(message, isError=false){$('status').textContent=message;$('status').className=isError?'error':'muted';}
-function showError(message){$('loginStatus').textContent=message;$('loginStatus').className='error';}
-function badgeClass(value){if(value==='PAID')return 'paid';if(value==='WAIVED')return 'waived';if(value==='OVERPAYMENT REVIEW')return 'over';return '';}
-function td(tr,value){let cell=document.createElement('td');cell.textContent=value??'—';tr.appendChild(cell);return cell;}
-async function verifyOwner(){
-  if(!db)throw new Error('Supabase library did not load.');
-  const {data:{user},error:userError}=await db.auth.getUser();
-  if(userError||!user||user.id!==OWNER)throw new Error('Owner access only.');
-  const {data:role,error:roleError}=await db.from('tournament_admins').select('role,active').eq('user_id',user.id).single();
-  if(roleError||!role||role.role!=='owner'||role.active!==true)throw new Error('Owner not authorized.');
-  return user;
+const OWNER='3e8a0bac-9b72-4b1a-a1da-608a7b0fae1a';
+const db=window.supabase?.createClient('https://vcshzqjozgzsgaknsjzq.supabase.co','sb_publishable_PFxb5Crp0VaeStU9hosP2g_E-SIDyqs',{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}});
+const $=id=>document.getElementById(id);
+const money=v=>v==null?'—':'₱'+Number(v).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+let authorized=false,snapshot=null,viewRows=[],selected=null;
+function status(t,bad=false){$('status').textContent=t;$('status').className=bad?'error':'muted'}
+function note(id,t,bad=false){$(id).textContent=t;$(id).className=bad?'error':'muted'}
+const num=x=>Number(x)||0;
+const isMoney=v=>Number.isFinite(Number(v))&&Number(v)>=0&&Number(v)<=100000&&Math.abs(Math.round(Number(v)*100)-Number(v)*100)<1e-6;
+async function owner(){
+ if(!db)throw Error('Supabase library failed to load');
+ const {data:{user},error}=await db.auth.getUser();
+ if(error||!user||user.id!==OWNER)throw Error('Owner login required');
+ const {data:r,error:e}=await db.from('tournament_admins').select('role,active').eq('user_id',user.id).single();
+ if(e||r?.role!=='owner'||r?.active!==true)throw Error('Active owner role required');
 }
-async function loadPayments(){
-  if(!authorized)return;
-  $('refresh').disabled=true;setStatus('Loading payment summary…');
-  try{
-    await verifyOwner();
-    // The security_invoker view and owner-only underlying RLS enforce server-side access.
-    const pageSize=500, rows=[];let from=0;
-    while(true){
-      const {data,error}=await db.from('bbc_payment_summary').select('*').order('player_name',{ascending:true}).range(from,from+pageSize-1);
-      if(error)throw error;
-      rows.push(...(data||[]));
-      if(!data||data.length<pageSize)break;
-      from+=pageSize;
-      if(from>=10000)throw new Error('Too many payment records to load safely. Use pagination before continuing.');
-    }
-    allPayments=rows;
-    const count=rows.length, awaiting=rows.filter(r=>r.payment_status==='AWAITING FINAL FEE').length;
-    const collected=rows.reduce((sum,r)=>sum+(Number(r.amount_paid)||0),0);
-    const hasUnknown=rows.some(r=>r.official_total==null);
-    const balances=rows.reduce((sum,r)=>sum+Math.max(0,Number(r.remaining_balance)||0),0);
-    $('recordCount').textContent=count.toLocaleString();
-    $('awaitingCount').textContent=awaiting.toLocaleString();
-    $('paidSum').textContent=money(collected);
-    $('balanceSum').textContent=hasUnknown?'—':money(balances);
-    $('balanceNote').textContent=hasUnknown?'Some fees are not finalized':'Excludes overpayments; review separately';
-    const options=[...new Set(rows.map(r=>String(r.category||'').trim()).filter(Boolean))].sort();
-    const old=$('category').value;
-    $('category').replaceChildren(new Option('All categories',''),...options.map(v=>new Option(v,v)));
-    if(options.includes(old))$('category').value=old;
-    $('lastRefresh').textContent='Last refreshed: '+new Date().toLocaleString('en-PH');
-    setStatus('Payment records loaded. No data changed.');
-    renderRows();
-  }catch(err){
-    allPayments=[];renderRows();setStatus('Unable to load payments: '+(err?.message||String(err)),true);
-    if(/Owner access|Owner not authorized/.test(err?.message||''))await signOut('Owner authorization failed. Please sign in again.');
-  }finally{$('refresh').disabled=false;}
+async function rpc(name,args={}){await owner();const {data,error}=await db.rpc(name,args);if(error)throw Error(error.message);return data;}
+function normalize(){
+ const regs=new Map((snapshot?.registrations||[]).map(r=>[r.id,r]));
+ const evMap=new Map();
+ for(const e of snapshot?.events||[]){if(!evMap.has(e.payment_id))evMap.set(e.payment_id,[]);evMap.get(e.payment_id).push(e)}
+ const fee=snapshot?.settings||{};
+ return (snapshot?.payments||[]).map(p=>{
+  const r=regs.get(p.registration_id);if(!r)return null;
+  const es=evMap.get(p.id)||[];
+  let waived=false,adjustment=0;
+  for(const e of es){if(e.action==='WAIVE')waived=true;if(e.action==='UNWAIVE')waived=false;if(e.action==='ADJUST')adjustment+=num(e.adjustment)}
+  const player=p.player_slot===2?r.partner_name:r.player_name;
+  const nick=p.player_slot===2?r.partner_nickname:r.player_nickname;
+  const matches=p.allocated_matches;
+  const official=fee.fee_status==='finalized'&&p.tournament_fee!=null&&p.queuing_fee!=null&&p.shuttlecock_unit_price!=null&&matches!=null
+   ? num(p.tournament_fee)+num(p.queuing_fee)+num(p.shuttlecock_unit_price)*num(matches)+adjustment:null;
+  const received=num(p.amount_paid);
+  const balance=waived?0:official==null?null:Math.max(0,official-received);
+  const tag=waived?'WAIVED':official==null?'AWAITING FINAL FEE':received>=Math.max(0,official)?'PAID':'UNPAID';
+  return {...p,registration:r,player,display:nick?`${player} (${nick})`:player,events:es,waived,adjustment,official,received,balance,tag};
+ }).filter(Boolean);
 }
-function renderRows(){
-  const term=$('search').value.trim().toLowerCase(),cat=$('category').value,status=$('paymentStatus').value;
-  const list=allPayments.filter(r=>(!term||[r.player_name,r.category,r.registration_status].some(x=>String(x||'').toLowerCase().includes(term)))&&(!cat||r.category===cat)&&(!status||r.payment_status===status));
-  const body=$('paymentRows');body.replaceChildren();
-  if(!list.length){const tr=document.createElement('tr');td(tr,allPayments.length?'No matching players.':'No payment records available.').colSpan=11;body.appendChild(tr);}
-  for(const r of list){
-    const tr=document.createElement('tr');
-    td(tr,r.player_name);td(tr,r.category);td(tr,r.registration_status);
-    td(tr,r.fee_status||'draft');td(tr,r.allocated_matches==null?'Not assigned':String(r.allocated_matches));
-    td(tr,money(r.legacy_fee));td(tr,money(r.official_total));td(tr,money(r.amount_paid));td(tr,money(r.remaining_balance));
-    const cell=td(tr,'');const badge=document.createElement('span');badge.className='status '+badgeClass(r.payment_status);badge.textContent=r.payment_status||'UNKNOWN';cell.appendChild(badge);
-    const manage=td(tr,'');const btn=document.createElement('button');btn.type='button';btn.textContent='Manage';btn.addEventListener('click',()=>selectPlayer(r));manage.appendChild(btn);
-    body.appendChild(tr);
+function cell(tr,txt){const c=tr.insertCell();c.textContent=txt??'—';return c}
+function draw(){
+ const show=$('showWithdrawn').checked;
+ const active=viewRows.filter(r=>show||r.registration.status==='registered');
+ const search=$('search').value.trim().toLowerCase(),cat=$('category').value,tag=$('paymentStatus').value;
+ const list=active.filter(r=>(!search||`${r.player} ${r.registration.category} ${r.registration.partner_name} ${r.registration.player_name}`.toLowerCase().includes(search))&&(!cat||r.registration.category===cat)&&(!tag||r.tag===tag));
+ const body=$('paymentRows');body.replaceChildren();
+ for(const r of list){const tr=body.insertRow();cell(tr,r.display);cell(tr,r.registration.category);cell(tr,r.registration.status);
+ cell(tr,r.allocated_matches??'Not assigned');cell(tr,money(r.official));cell(tr,money(r.received));cell(tr,money(r.adjustment));cell(tr,money(r.balance));
+ const b=document.createElement('span');b.className='status '+(r.tag==='PAID'?'paid':r.tag==='WAIVED'?'waived':'');b.textContent=r.tag;tr.insertCell().appendChild(b);
+ const btn=document.createElement('button');btn.textContent='Manage';btn.addEventListener('click',()=>pick(r));tr.insertCell().appendChild(btn)}
+ if(!list.length){const tr=body.insertRow();cell(tr,'No matching payment records').colSpan=10}
+ $('resultsCount').textContent=`Showing ${list.length} of ${active.length} records (${viewRows.length} incl. history).`;
+ const current=viewRows.filter(r=>r.registration.status==='registered');
+ $('recordCount').textContent=current.length;
+ $('awaitingCount').textContent=current.filter(r=>r.official==null).length;
+ $('paidSum').textContent=money(viewRows.reduce((s,r)=>s+r.received,0));
+ const known=current.filter(r=>r.balance!=null).reduce((s,r)=>s+r.balance,0);
+ $('balanceSum').textContent=money(known);
+ $('balanceNote').textContent='Excludes players awaiting finalized match allocation';
+}
+async function refresh(){if(!authorized)return;$('refresh').disabled=true;status('Loading BBC payment records…');
+ try{snapshot=await rpc('bbc_payment_admin_dashboard');viewRows=normalize();
+ const s=snapshot.settings||{};$('feeBadge').textContent=(s.fee_status||'unknown').toUpperCase();
+ $('tournamentFee').value=s.tournament_fee??'';$('queueFee').value=s.queuing_fee??'';$('shuttleFee').value=s.shuttlecock_fee??'';
+ const cats=[...new Set(viewRows.map(r=>r.registration.category))].sort();const old=$('category').value;
+ $('category').replaceChildren(new Option('All categories',''),...cats.map(x=>new Option(x,x)));if(cats.includes(old))$('category').value=old;
+ $('lastRefresh').textContent='Last refreshed: '+new Date().toLocaleString('en-PH');status('Payment records loaded.');draw();
+ if(selected){selected=viewRows.find(r=>r.id===selected.id)||null;if(selected)pick(selected);else $('adminActions').hidden=true}
+ }catch(e){status('Load failed: '+e.message,true)}finally{$('refresh').disabled=false}}
+function pick(r){selected=r;$('adminActions').hidden=false;$('selectedPlayer').textContent=r.display+' · '+r.registration.category+' · '+r.registration.status;
+ $('selectedBalance').textContent='Official total: '+money(r.official)+' · Received: '+money(r.received)+' · Balance: '+money(r.balance)+' · Status: '+r.tag;
+ $('adminTag').value=r.waived?'UNWAIVE':r.tag==='PAID'?'ADJUST':'RECORD_PAID';$('paymentAmount').value='';$('paymentReference').value='';$('adjustmentReason').value='';note('actionMessage','');
+ $('adminActions').scrollIntoView({behavior:'smooth',block:'start'})}
+async function saveFees(finalize){
+ const t=$('tournamentFee').value.trim(),q=$('queueFee').value.trim(),s=$('shuttleFee').value.trim(),reason=$('feeReason').value.trim();
+ if(q===''||s===''||!isMoney(q)||!isMoney(s)||(t!==''&&!isMoney(t))){note('feeMessage','Enter valid nonnegative fee values.',true);return}
+ if(finalize&&t===''){note('feeMessage','Tournament fee is required before finalizing.',true);return}
+ if(reason.length<3){note('feeMessage','Enter a reason of at least three characters.',true);return}
+ const form={p_tournament:t===''?null:Number(t),p_queue:Number(q),p_shuttle:Number(s),p_final:finalize,p_reason:reason};
+ if(!confirm(finalize?'FINALIZE the fees now? Recorded payments can lock fee changes.':'Save these amounts as draft fees?'))return;
+ const btn=$(finalize?'finalize':'saveDraft');btn.disabled=true;
+ try{const x=await rpc('bbc_payment_save_fees',form);note('feeMessage','Fee settings saved as '+x+'.');await refresh()}
+ catch(e){note('feeMessage','Fee update failed: '+e.message,true)}finally{btn.disabled=false}
+}
+async function sync(){if(!confirm('Create missing individual payment records for approved teams? Existing records will not be overwritten.'))return;
+ $('sync').disabled=true;try{const n=await rpc('bbc_payment_sync_approved');status(`Synchronization completed: ${n} new player payment record(s) created.`);await refresh()}
+ catch(e){status('Sync failed: '+e.message,true)}finally{$('sync').disabled=false}}
+async function action(){if(!selected)return;
+ const kind=$('adminTag').value,amtText=$('paymentAmount').value.trim(),amt=Number(amtText),reason=$('adjustmentReason').value.trim();
+ if(reason.length<3){note('actionMessage','A reason is required.',true);return}
+ if(kind==='RECORD_PAID'&&(!selected.official&&selected.official!==0)){note('actionMessage','Finalize fees and assign completed matches before recording PAID.',true);return}
+ if(['RECORD_PAID','ADJUST'].includes(kind)&&(!amtText||!Number.isFinite(amt)||Math.abs(Math.round(amt*100)-amt*100)>1e-6||(kind==='RECORD_PAID'&&amt<=0)||(kind==='ADJUST'&&amt===0))){note('actionMessage','Enter a valid nonzero two-decimal amount.',true);return}
+ if(kind==='RECORD_PAID'&&selected.received+amt < selected.official){note('actionMessage','This receipt will not settle the entire balance. Enter the correct total to tag PAID.',true);return}
+ if(!confirm(`Confirm ${kind} for ${selected.display}? This action will be logged.`))return;
+ $('saveAdminAction').disabled=true;
+ try{
+  if(kind==='RECORD_PAID'){
+    // Existing trusted payment RPC records actual receipt, atomically and idempotently.
+    const key=crypto.randomUUID();
+    await rpc('bbc_payment_record_owner_receipt',{p_payment_id:selected.id,p_amount:amt,p_method:$('paymentMethod').value,p_reference:$('paymentReference').value.trim()||null,p_notes:reason,p_request_key:key});
+  }else{
+    await rpc('bbc_payment_admin_action',{p_payment:selected.id,p_action:kind,p_adjustment:kind==='ADJUST'?amt:0,p_reason:reason});
   }
-  $('resultsCount').textContent=`Showing ${list.length} of ${allPayments.length} individual player payment record(s).`;
+  note('actionMessage','Action recorded.');await refresh();
+ }catch(e){note('actionMessage','Action failed: '+e.message,true)}finally{$('saveAdminAction').disabled=false}
 }
-function selectPlayer(r){
-  $('adminActions').hidden=false;
-  $('selectedPlayer').textContent=`Selected player: ${r.player_name || 'Unknown'} · ${r.category || ''} · Current calculated status: ${r.payment_status || 'Unknown'}`;
-  $('adminTag').value=['PAID','UNPAID','WAIVED'].includes(r.payment_status)?r.payment_status:'UNPAID';
-  $('adjustmentAmount').value=''; $('adjustmentReason').value='';
-  $('adminActions').scrollIntoView({behavior:'smooth',block:'start'});
-}
-async function signOut(message='Signed out.'){
-  authorized=false;allPayments=[];
-  $('dashboard').hidden=true;$('loginPanel').hidden=false;$('adminActions').hidden=true;
-  $('password').value='';$('paymentRows').replaceChildren();
-  if(db)await db.auth.signOut();
-  $('loginStatus').textContent=message;$('loginStatus').className='muted';
-}
-$('loginForm').addEventListener('submit',async e=>{
-  e.preventDefault();const button=e.currentTarget.querySelector('button');button.disabled=true;showError('');
-  try{
-    if(!db)throw new Error('Supabase library did not load.');
-    const {error}=await db.auth.signInWithPassword({email:$('email').value,password:$('password').value});
-    $('password').value='';if(error)throw error;
-    await verifyOwner();authorized=true;$('loginPanel').hidden=true;$('dashboard').hidden=false;
-    await loadPayments();
-  }catch(err){await signOut(err?.message||'Login failed.');$('loginStatus').className='error';}
-  finally{button.disabled=false;}
-});
-$('logout').addEventListener('click',()=>signOut());
-$('refresh').addEventListener('click',loadPayments);
-for(const id of ['search','category','paymentStatus'])$(id).addEventListener(id==='search'?'input':'change',renderRows);
+async function signout(message='Signed out'){authorized=false;snapshot=null;viewRows=[];selected=null;$('dashboard').hidden=true;$('loginPanel').hidden=false;$('password').value='';
+ if(db)await db.auth.signOut();note('loginStatus',message)}
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();const btn=e.currentTarget.querySelector('button');btn.disabled=true;
+ try{const {error}=await db.auth.signInWithPassword({email:$('email').value,password:$('password').value});if(error)throw error;await owner();authorized=true;$('loginPanel').hidden=true;$('dashboard').hidden=false;await refresh()}
+ catch(err){await signout(err.message);note('loginStatus',err.message,true)}finally{btn.disabled=false}});
+$('refresh').onclick=refresh;$('sync').onclick=sync;$('logout').onclick=()=>signout();
+$('saveDraft').onclick=()=>saveFees(false);$('finalize').onclick=()=>saveFees(true);$('saveAdminAction').onclick=action;$('cancelAction').onclick=()=>{$('adminActions').hidden=true;selected=null};
+for(const id of ['search','category','paymentStatus','showWithdrawn'])$(id).addEventListener(id==='search'?'input':'change',draw);
 </script>
 </body>
 </html>
